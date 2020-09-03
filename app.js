@@ -9,6 +9,7 @@ const cardsRouter = require('./routes/cards');
 const usersRouter = require('./routes/users');
 const NotFoundError = require('./errors/not-found-err');
 const errorMessages = require('./errors/err-messages/err-messages');
+const { requestLogger, errorLogger } = require('./middlewares/logger');
 
 const { PORT = 3000 } = process.env;
 const app = express();
@@ -31,9 +32,12 @@ app.use(limiter);
 app.use(cookieParser());
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
+app.use(requestLogger);
 
 app.use('/', cardsRouter);
 app.use('/', usersRouter);
+
+app.use(errorLogger);
 app.use((req, res, next) => {
   next(new NotFoundError(errorMessages.notFoundPage));
 });
