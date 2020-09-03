@@ -4,6 +4,7 @@ const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
 const mongoose = require('mongoose');
 const bodyParser = require('body-parser');
+const { errors } = require('celebrate');
 const cardsRouter = require('./routes/cards');
 const usersRouter = require('./routes/users');
 const NotFoundError = require('./errors/not-found-err');
@@ -36,6 +37,8 @@ app.use('/', usersRouter);
 app.use((req, res, next) => {
   next(new NotFoundError(errorMessages.notFoundPage));
 });
+
+app.use(errors());
 
 app.use((err, req, res, next) => {
   const { statusCode = 500, message } = err;
