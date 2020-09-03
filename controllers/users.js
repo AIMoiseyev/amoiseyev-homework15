@@ -1,16 +1,19 @@
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const User = require('../models/user');
+const errorMessages = require('../errors/err-messages/err-messages');
+const BadRequestError = require('../errors/bad-request-err');
+const ConflictError = require('../errors/conflict-err');
+const NotFoundError = require('../errors/not-found-err');
 
-module.exports.getUsers = (req, res) => {
+module.exports.getUsers = (req, res, next) => {
   User.find({})
     .then((users) => res.status(200)
       .send({ data: users }))
-    .catch(() => res.status(500)
-      .send({ message: 'На сервере произошла ошибка' }));
+    .catch(next);
 };
 
-module.exports.createUser = (req, res) => {
+module.exports.createUser = (req, res, next) => {
   const {
     name,
     about,
@@ -37,23 +40,19 @@ module.exports.createUser = (req, res) => {
       }))
     .catch((err) => {
       if (err.name === 'Error') {
-        return res.status(400)
-          .send({ message: 'Заполнены не все обязательные поля' });
+        return next(new BadRequestError(errorMessages.requiredFields));
       }
-      if (err.name === 'MongoError') {
-        return res.status(409)
-          .send({ message: 'Пользователь с таким email уже существует' });
+      if (err.name === 'MongoError' && err.code === 11000) {
+        return next(new ConflictError(errorMessages.sameEmail));
       }
       if (err.name === 'ValidationError') {
-        return res.status(400)
-          .send({ message: err.message });
+        return next(new BadRequestError(errorMessages.fieldValidation));
       }
-      return res.status(500)
-        .send({ message: 'На сервере произошла ошибка' });
+      return next(err);
     });
 };
 
-module.exports.login = (req, res) => {
+module.exports.login = (req, res, next) => {
   const { email, password } = req.body;
   return User.findUserByCredentials(email, password)
     .then((user) => {
@@ -65,32 +64,27 @@ module.exports.login = (req, res) => {
       })
         .end();
     })
-    .catch((err) => res
-      .status(401)
-      .send({ message: err.message }));
+    .catch(next);
 };
 
-module.exports.findUser = (req, res) => {
+module.exports.findUser = (req, res, next) => {
   User.findById(req.params.id)
     .then((user) => {
       if (user) {
         return res.status(200)
           .send({ data: user });
       }
-      return res.status(404)
-        .send({ message: 'Нет пользователя с таким id' });
+      throw new NotFoundError(errorMessages.userId);
     })
     .catch((err) => {
       if (err.name === 'CastError') {
-        return res.status(400)
-          .send({ message: 'Нет пользователя с таким id' });
+        return next(new BadRequestError(errorMessages.userId));
       }
-      return res.status(500)
-        .send({ message: 'На сервере произошла ошибка' });
+      return next(err);
     });
 };
 
-module.exports.updateProfile = (req, res) => {
+module.exports.updateProfile = (req, res, next) => {
   const { name, about } = req.body;
   User.findByIdAndUpdate(req.user._id, {
     name,
@@ -105,20 +99,17 @@ module.exports.updateProfile = (req, res) => {
         return res.status(200)
           .send({ data: user });
       }
-      return res.status(404)
-        .send({ message: 'Нет пользователя с таким id' });
+      throw new NotFoundError(errorMessages.userId);
     })
     .catch((err) => {
       if (err.name === 'ValidationError') {
-        return res.status(400)
-          .send({ message: err.message });
+        return next(new BadRequestError(errorMessages.fieldValidation));
       }
-      return res.status(500)
-        .send({ message: 'На сервере произошла ошибка' });
+      return next(err);
     });
 };
 
-module.exports.updateAvatar = (req, res) => {
+module.exports.updateAvatar = (req, res, next) => {
   const { avatar } = req.body;
   User.findByIdAndUpdate(req.user._id, {
     avatar,
@@ -132,15 +123,12 @@ module.exports.updateAvatar = (req, res) => {
         return res.status(200)
           .send({ data: match });
       }
-      return res.status(404)
-        .send({ message: 'Нет пользователя с таким id' });
+      throw new NotFoundError(errorMessages.userId);
     })
     .catch((err) => {
       if (err.name === 'ValidationError') {
-        return res.status(400)
-          .send({ message: err.message });
+        return next(new BadRequestError(errorMessages.fieldValidation));
       }
-      return res.status(500)
-        .send({ message: 'На сервере произошла ошибка' });
+      return next(err);
     });
 };
