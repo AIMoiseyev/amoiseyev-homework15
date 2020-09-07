@@ -1,4 +1,5 @@
-require('dotenv').config();
+require('dotenv')
+  .config();
 const express = require('express');
 const cookieParser = require('cookie-parser');
 const helmet = require('helmet');
@@ -58,9 +59,10 @@ app.use((err, req, res, next) => {
     .status(statusCode)
     .send({
       message: statusCode === 500
-        ? 'На сервере произошла ошибка'
+        ? errorMessages.internalServerError
         : message,
     });
+  next();
 });
 
 app.listen(PORT, () => {

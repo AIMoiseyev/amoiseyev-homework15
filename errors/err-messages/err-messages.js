@@ -8,6 +8,7 @@ const errMessages = {
   unauthorized: 'Неправильные почта или пароль',
   authorizationRequired: 'Необходима авторизация',
   notFoundPage: 'Запрашиваемый ресурс не найден',
+  internalServerError: 'На сервере произошла ошибка',
 };
 
 module.exports = errMessages;
